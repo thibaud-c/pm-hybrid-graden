@@ -1,0 +1,1 @@
+export const PRIVACY_NOTICE = 'Exact location, readings, color, comments, photos, and Voice Notes can be viewed by anyone with the Event Access Code. I will not record identifiable people without their permission.'
