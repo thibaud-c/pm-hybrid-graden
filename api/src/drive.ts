@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import type { Database } from './db'
+import type { Database } from './db.js'
 
 const FOLDER_CONFIG_KEY = 'google_drive_folder_id'
 

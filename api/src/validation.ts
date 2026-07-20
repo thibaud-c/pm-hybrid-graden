@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { parseBuffer } from 'music-metadata'
-import type { Feeling, ObservationInput } from './types'
+import type { Feeling, ObservationInput } from './types.js'
 
 export const MAX_MEDIA_BYTES = 4_000_000
 export const DRAFT_LIFETIME_MS = 24 * 60 * 60 * 1000

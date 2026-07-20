@@ -3,9 +3,9 @@ import { HTTPException } from 'hono/http-exception'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import type { MiddlewareHandler } from 'hono'
-import { Database } from './db'
-import { Drive } from './drive'
-import type { ObservationRow, Session } from './types'
+import { Database } from './db.js'
+import { Drive } from './drive.js'
+import type { ObservationRow, Session } from './types.js'
 import {
   createToken,
   DRAFT_LIFETIME_MS,

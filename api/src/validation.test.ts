@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import app from './app'
-import { hash, mediaExtension, normalizeCode, parseObservation, validateAudioDuration } from './validation'
+import app from './app.js'
+import { hash, mediaExtension, normalizeCode, parseObservation, validateAudioDuration } from './validation.js'
 
 function wav(seconds: number) {
   const sampleRate = 8_000
