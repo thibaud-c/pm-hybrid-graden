@@ -1,4 +1,4 @@
-import type { ObservationInput, ObservationRow, Session, SessionKind } from './types'
+import type { ObservationInput, ObservationRow, Session, SessionKind } from './types.js'
 
 type AccessCode = { id: string; kind: SessionKind; event_id: string | null }
 

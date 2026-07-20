@@ -15,7 +15,7 @@ import {
   normalizeCode,
   parseObservation,
   validateAudioDuration,
-} from './validation'
+} from './validation.js'
 
 type Variables = { session: Session }
 export type AppDatabase = Pick<Database,

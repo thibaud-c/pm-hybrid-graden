@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { createApp } from './app'
-import type { AppDatabase, AppDrive } from './app'
-import type { Session } from './types'
+import { createApp } from './app.js'
+import type { AppDatabase, AppDrive } from './app.js'
+import type { Session } from './types.js'
 
 const input = {
   latitude: 47.07,
