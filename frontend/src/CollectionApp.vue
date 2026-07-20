@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { BarChart3, HeartPulse, Leaf, LogOut, Plus, Trash2 } from 'lucide-vue-next'
+import { BarChart3, Leaf, LogOut, Plus, Trash2 } from 'lucide-vue-next'
 import {
   acknowledgePrivacy,
   clearSession,
@@ -203,7 +203,6 @@ onMounted(restore)
       </div>
       <nav class="glass pointer-events-auto flex rounded-2xl border border-border p-1 shadow-sm" aria-label="Application">
         <a :href="`${pagesBase}stats/`" class="grid size-10 place-items-center rounded-xl hover:bg-accent" aria-label="Statistics"><BarChart3 class="size-5" /></a>
-        <a :href="`${pagesBase}status/`" class="grid size-10 place-items-center rounded-xl hover:bg-accent" aria-label="System status"><HeartPulse class="size-5" /></a>
         <button class="grid size-10 place-items-center rounded-xl hover:bg-accent" aria-label="Leave session" @click="leave"><LogOut class="size-5" /></button>
       </nav>
     </header>

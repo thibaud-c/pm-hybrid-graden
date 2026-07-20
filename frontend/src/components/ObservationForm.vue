@@ -19,8 +19,14 @@ const emit = defineEmits<{
   delete: []
 }>()
 
+const WHITE = '#FFFFFF'
+const PICKER_SEED = '#00FF35'
+const SENSOR_COLOR_PATTERN = /^#[0-9A-F]{6}$/i
+const initialColor = (props.observation?.sensorColor ?? WHITE).toUpperCase()
 const reading = ref(props.observation?.plantReading.toString() ?? '')
-const color = ref(props.observation?.sensorColor ?? '#4E8D5B')
+const color = ref(initialColor)
+const colorText = ref(initialColor)
+const pickerColor = ref(initialColor === WHITE ? PICKER_SEED : initialColor)
 const feeling = ref(props.observation?.feeling ?? null)
 const comment = ref(props.observation?.comment ?? '')
 const photo = ref<Blob | null>(null)
@@ -38,6 +44,7 @@ let hardStopTimer: number | null = null
 let recordingStartedAt = 0
 let audioPreview = ''
 let photoPreview = ''
+let awaitingLocation = false
 
 const currentAudioUrl = computed(() => {
   if (audioPreview) URL.revokeObjectURL(audioPreview)
@@ -49,14 +56,42 @@ const currentPhotoUrl = computed(() => {
   photoPreview = photo.value ? URL.createObjectURL(photo.value) : ''
   return photoPreview
 })
-const valid = computed(() => props.location && reading.value !== '' && Number.isFinite(Number(reading.value)) && Number(reading.value) >= 0)
+const validColor = computed(() => SENSOR_COLOR_PATTERN.test(colorText.value))
+const valid = computed(() => props.location && validColor.value && reading.value !== '' && Number.isFinite(Number(reading.value)) && Number(reading.value) >= 0)
 
 watch(() => props.observation, (observation) => {
+  const nextColor = (observation?.sensorColor ?? WHITE).toUpperCase()
   reading.value = observation?.plantReading.toString() ?? ''
-  color.value = observation?.sensorColor ?? '#4E8D5B'
+  color.value = nextColor
+  colorText.value = nextColor
+  pickerColor.value = nextColor === WHITE ? PICKER_SEED : nextColor
   feeling.value = observation?.feeling ?? null
   comment.value = observation?.comment ?? ''
 }, { immediate: true })
+
+watch(colorText, (value) => {
+  if (!SENSOR_COLOR_PATTERN.test(value)) return
+  color.value = value.toUpperCase()
+  pickerColor.value = color.value === WHITE ? PICKER_SEED : color.value
+})
+
+watch(() => props.location, (location) => {
+  if (!awaitingLocation || !location) return
+  awaitingLocation = false
+  collapsed.value = true
+}, { deep: true })
+
+function chooseColor(event: Event) {
+  const value = (event.target as HTMLInputElement).value.toUpperCase()
+  color.value = value
+  colorText.value = value
+  pickerColor.value = value
+}
+
+function requestLocation() {
+  awaitingLocation = true
+  emit('locate')
+}
 
 async function resizePhoto(file: File) {
   const bitmap = await createImageBitmap(file)
@@ -87,11 +122,6 @@ async function choosePhoto(event: Event) {
   }
 }
 
-function supportedAudioType() {
-  return ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg']
-    .find((type) => MediaRecorder.isTypeSupported(type))
-}
-
 async function startRecording() {
   mediaError.value = ''
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
@@ -100,12 +130,11 @@ async function startRecording() {
   }
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    const mimeType = supportedAudioType()
-    recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
-    const chunks: BlobPart[] = []
+    recorder = new MediaRecorder(stream)
+    const chunks: Blob[] = []
     recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data) }
     recorder.onstop = () => {
-      const recorded = new Blob(chunks, { type: recorder?.mimeType || mimeType || 'audio/webm' })
+      const recorded = new Blob(chunks, { type: chunks[0]?.type || recorder?.mimeType || 'audio/webm' })
       const duration = (performance.now() - recordingStartedAt) / 1000
       if (duration > 60) {
         mediaError.value = 'The Voice Note is longer than 60 seconds.'
@@ -171,7 +200,13 @@ onBeforeUnmount(() => {
 
 <template>
   <aside class="sheet" :class="{ 'sheet-collapsed': collapsed }" aria-label="Observation form">
-    <Button v-if="collapsed" class="m-3 shadow-xl" @click="collapsed = false"><MapPin /> Return to Observation</Button>
+    <div v-if="collapsed" class="glass m-3 grid min-w-64 gap-3 rounded-2xl border border-border p-3 shadow-xl">
+      <div class="flex items-center gap-3">
+        <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-white"><MapPin class="size-5" /></span>
+        <div><p class="font-semibold">{{ location ? (location.accuracyM === null ? 'Location selected' : 'Location found') : 'Choose a location' }}</p><p class="text-sm text-muted-foreground">{{ location ? (location.accuracyM === null ? 'Drag the pin to adjust it.' : `Accurate to about ±${Math.round(location.accuracyM)} m`) : 'Tap the map to place the pin.' }}</p></div>
+      </div>
+      <Button @click="collapsed = false">{{ location ? 'Continue observation' : 'Return to observation' }}</Button>
+    </div>
     <template v-else>
     <div class="sheet-handle shrink-0" />
     <header class="z-10 flex shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
@@ -183,11 +218,12 @@ onBeforeUnmount(() => {
       <div class="grid min-h-0 flex-1 gap-6 overflow-y-auto p-4">
       <section class="grid gap-3">
         <div><h3 class="font-bold">1. Location</h3><p class="text-sm text-muted-foreground">Your exact location anchors this Observation. We ask only when you tap the button; you can also tap or drag the marker on the map.</p></div>
-        <Button variant="outline" @click="emit('locate')"><LocateFixed /> Use my location</Button>
+        <Button variant="outline" @click="requestLocation"><LocateFixed /> Use my location</Button>
         <Button variant="outline" @click="collapsed = true"><MapPin /> Place on map</Button>
         <p v-if="location" class="rounded-xl bg-muted p-3 text-sm">
-          {{ location.latitude.toFixed(6) }}, {{ location.longitude.toFixed(6) }}
-          <span v-if="location.accuracyM !== null" class="block text-muted-foreground">GPS accuracy: ±{{ Math.round(location.accuracyM) }} m</span>
+          <strong>Location selected</strong>
+          <span v-if="location.accuracyM !== null" class="block text-muted-foreground">Accurate to about ±{{ Math.round(location.accuracyM) }} m</span>
+          <span v-else class="block text-muted-foreground">Placed manually on the map</span>
         </p>
         <p v-else class="rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground">No location yet. Use GPS or temporarily open the map.</p>
       </section>
@@ -195,7 +231,17 @@ onBeforeUnmount(() => {
       <section class="grid gap-4">
         <h3 class="font-bold">2. Sensor measurements</h3>
         <div class="field"><label for="reading">Plant Reading</label><input id="reading" v-model="reading" class="control" type="number" min="0" step="any" inputmode="decimal" required /></div>
-        <div class="field"><label for="sensor-color">Sensor Color</label><div class="flex gap-3"><input id="sensor-color" v-model="color" class="h-12 w-16 rounded-xl border border-border bg-white p-1" type="color" /><output class="control flex items-center">{{ color.toUpperCase() }}</output></div></div>
+        <div class="field">
+          <span class="field-label">Sensor Color</span>
+          <div class="grid grid-cols-[auto_1fr] gap-3">
+            <label class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-border bg-white px-3 text-sm font-semibold">
+              <span class="size-7 rounded-lg border border-border" :style="{ backgroundColor: color }" aria-hidden="true" /> Choose color
+              <input class="sr-only" type="color" :value="pickerColor" @input="chooseColor" />
+            </label>
+            <input id="sensor-color" v-model.trim="colorText" class="control uppercase" aria-label="Sensor Color hex code" :aria-describedby="validColor ? undefined : 'sensor-color-error'" :aria-invalid="!validColor" autocomplete="off" autocapitalize="characters" maxlength="7" spellcheck="false" />
+          </div>
+          <p v-if="!validColor" id="sensor-color-error" class="text-sm font-medium text-destructive">Enter a six-digit hex color such as #FFFFFF.</p>
+        </div>
       </section>
 
       <section class="grid gap-4">

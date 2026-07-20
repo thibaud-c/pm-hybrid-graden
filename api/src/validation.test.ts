@@ -71,6 +71,10 @@ describe('API trust boundaries', () => {
     await expect(validateAudioDuration(wav(61), 'audio/wav')).rejects.toThrow('60 seconds')
   })
 
+  test('accepts audio when its duration metadata cannot be read', async () => {
+    expect(await validateAudioDuration(new Uint8Array([1, 2, 3]).buffer, 'audio/webm')).toBeUndefined()
+  })
+
   test('reports unavailable dependencies without leaking configuration', async () => {
     const response = await app.request('/status')
     expect(response.status).toBe(503)

@@ -114,6 +114,7 @@ function updateLocation() {
     return
   }
   const coordinates: [number, number] = [props.selectedLocation.longitude, props.selectedLocation.latitude]
+  const focusLocation = !locationMarker || props.selectedLocation.accuracyM !== null
   if (!locationMarker) {
     locationMarker = new maplibregl.Marker({ color: '#25633d', draggable: true })
       .setLngLat(coordinates)
@@ -122,17 +123,17 @@ function updateLocation() {
       const point = locationMarker!.getLngLat()
       emit('location', { latitude: point.lat, longitude: point.lng, accuracyM: null })
     })
-    map.flyTo({ center: coordinates, zoom: Math.max(map.getZoom(), 16) })
   } else {
     locationMarker.setLngLat(coordinates)
   }
+  if (focusLocation) map.flyTo({ center: coordinates, zoom: Math.max(map.getZoom(), 16) })
 }
 
 onMounted(() => {
   map = new maplibregl.Map({
     container: container.value!,
-    center: [15.4395, 47.0707],
-    zoom: 13,
+    center: [16.3738, 48.2082],
+    zoom: 12,
     style: {
       version: 8,
       sources: {

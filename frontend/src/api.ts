@@ -29,7 +29,8 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
     throw new ApiError(body?.error?.message || `Request failed (${response.status})`, response.status)
   }
   if (response.status === 204) return undefined as T
-  return response.json() as Promise<T>
+  const body = await response.text()
+  return body ? JSON.parse(body) as T : undefined as T
 }
 
 export async function login(code: string, purpose: 'collect' | 'stats', privacyAcknowledged: boolean) {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { HeartPulse, Leaf, LogOut, Map, RefreshCw, Trash2, X } from 'lucide-vue-next'
+import { Leaf, LogOut, Map, RefreshCw, Trash2, X } from 'lucide-vue-next'
 import {
   clearSession,
   currentSession,
@@ -107,7 +107,6 @@ onBeforeUnmount(() => { if (pollTimer) window.clearInterval(pollTimer) })
         <div class="flex items-center gap-2"><span class="grid size-10 place-items-center rounded-xl bg-primary text-white"><Map class="size-5" /></span><div><h1 class="font-bold">Observation Statistics</h1><p class="text-xs text-muted-foreground">{{ session?.kind === 'global' ? 'All permanent Events' : session?.kind === 'temporary' ? 'Temporary session' : session?.eventCode }}</p></div></div>
         <nav class="flex items-center gap-1">
           <a :href="pagesBase" class="grid size-10 place-items-center rounded-xl hover:bg-accent" aria-label="Collection"><Leaf class="size-5" /></a>
-          <a :href="`${pagesBase}status/`" class="grid size-10 place-items-center rounded-xl hover:bg-accent" aria-label="System status"><HeartPulse class="size-5" /></a>
           <button class="grid size-10 place-items-center rounded-xl hover:bg-accent" aria-label="Leave session" @click="leave"><LogOut class="size-5" /></button>
         </nav>
       </div>

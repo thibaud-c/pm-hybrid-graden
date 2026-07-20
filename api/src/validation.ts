@@ -88,9 +88,10 @@ export async function validateAudioDuration(bytes: ArrayBuffer, mime: string) {
     })
     duration = metadata.format.duration
   } catch {
-    throw new Error('The Voice Note is not a valid audio file')
+    // ponytail: accept browser audio the parser cannot inspect; add transcoding only if the size cap proves insufficient.
+    return undefined
   }
-  if (!duration || !Number.isFinite(duration)) throw new Error('The Voice Note duration could not be read')
+  if (!duration || !Number.isFinite(duration)) return undefined
   if (duration > 60) throw new Error('Voice Notes are limited to 60 seconds')
   return duration
 }

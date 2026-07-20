@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Leaf } from 'lucide-vue-next'
+import { Leaf, ShieldCheck } from 'lucide-vue-next'
 import { PRIVACY_NOTICE } from '../privacyNotice'
 import Button from './ui/Button.vue'
 import Card from './ui/Card.vue'
@@ -31,7 +31,7 @@ const submit = () => {
         </div>
         <label v-if="purpose === 'collect'" class="flex items-start gap-3 rounded-xl bg-muted p-3 text-sm leading-5">
           <input v-model="acknowledged" class="mt-1 size-4" type="checkbox" required />
-          <span>{{ PRIVACY_NOTICE }}</span>
+          <span><strong class="mb-1 flex items-center gap-1.5"><ShieldCheck class="size-4" /> Share responsibly</strong>{{ PRIVACY_NOTICE }}</span>
         </label>
         <p v-if="error" class="text-sm font-medium text-destructive" role="alert">{{ error }}</p>
         <Button type="submit" :disabled="loading || !code.trim() || (purpose === 'collect' && !acknowledged)">

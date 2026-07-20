@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Leaf } from 'lucide-vue-next'
+import { Leaf, ShieldCheck } from 'lucide-vue-next'
 import { PRIVACY_NOTICE } from '../privacyNotice'
 import Button from './ui/Button.vue'
 import Card from './ui/Card.vue'
@@ -18,7 +18,7 @@ const acknowledged = ref(false)
       <p class="mt-2 text-sm text-muted-foreground">This browser already has access to the Collection Event. Please read and accept the collection notice before adding an Observation.</p>
       <label class="mt-6 flex items-start gap-3 rounded-xl bg-muted p-3 text-sm leading-5">
         <input v-model="acknowledged" class="mt-1 size-4" type="checkbox" />
-        <span>{{ PRIVACY_NOTICE }}</span>
+        <span><strong class="mb-1 flex items-center gap-1.5"><ShieldCheck class="size-4" /> Share responsibly</strong>{{ PRIVACY_NOTICE }}</span>
       </label>
       <p v-if="error" class="mt-4 text-sm font-medium text-destructive" role="alert">{{ error }}</p>
       <Button class="mt-4 w-full" :disabled="loading || !acknowledged" @click="emit('submit')">{{ loading ? 'Saving…' : 'Accept and collect' }}</Button>
