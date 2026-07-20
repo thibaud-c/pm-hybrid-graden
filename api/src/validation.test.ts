@@ -35,7 +35,7 @@ describe('API trust boundaries', () => {
     expect(parseObservation({
       latitude: 47.07,
       longitude: 15.44,
-      plantReading: 1.25,
+      plantReading: 0.75,
       sensorColor: '#a0b1c2',
       feeling: 'curiosity',
       comment: ' hello ',
@@ -43,7 +43,7 @@ describe('API trust boundaries', () => {
       latitude: 47.07,
       longitude: 15.44,
       accuracy_m: null,
-      plant_reading: 1.25,
+      plant_reading: 0.75,
       sensor_color: '#A0B1C2',
       feeling: 'curiosity',
       comment: 'hello',
@@ -57,6 +57,12 @@ describe('API trust boundaries', () => {
       plantReading: -1,
       sensorColor: '#000000',
     })).toThrow()
+    expect(() => parseObservation({
+      latitude: 47,
+      longitude: 15,
+      plantReading: 1.01,
+      sensorColor: '#000000',
+    })).toThrow('Plant Reading must be between 0 and 1')
   })
 
   test('uses the actual supported audio MIME type', () => {

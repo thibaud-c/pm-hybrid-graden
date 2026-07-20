@@ -37,7 +37,7 @@ export function parseObservation(value: unknown): ObservationInput {
 
   if (latitude < -90 || latitude > 90) throw new Error('Invalid latitude')
   if (longitude < -180 || longitude > 180) throw new Error('Invalid longitude')
-  if (plantReading < 0) throw new Error('Plant Reading must be non-negative')
+  if (plantReading < 0 || plantReading > 1) throw new Error('Plant Reading must be between 0 and 1')
   if (accuracy !== null && accuracy !== undefined &&
       (typeof accuracy !== 'number' || !Number.isFinite(accuracy) || accuracy < 0)) {
     throw new Error('Invalid GPS accuracy')

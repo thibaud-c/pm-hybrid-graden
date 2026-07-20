@@ -6,7 +6,7 @@ const observation: ObservationSave = {
   latitude: 47.07,
   longitude: 15.44,
   accuracyM: 5,
-  plantReading: 1.25,
+  plantReading: 0.75,
   sensorColor: '#A0B1C2',
   feeling: 'curiosity',
   comment: 'hello',

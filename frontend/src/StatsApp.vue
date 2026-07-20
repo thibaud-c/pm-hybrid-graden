@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Leaf, LogOut, Map, RefreshCw, Trash2, X } from 'lucide-vue-next'
+import { ChevronDown, ChevronUp, Leaf, LogOut, Map, RefreshCw, Trash2, X } from 'lucide-vue-next'
 import {
   clearSession,
   currentSession,
@@ -28,6 +28,7 @@ const gateLoading = ref(false)
 const restoreError = ref('')
 const loading = ref(false)
 const polling = ref(true)
+const dashboardOpen = ref(true)
 const mode = ref<'points' | 'h3'>('points')
 const pointStyle = ref<'measurements' | 'feelings' | 'plants'>('measurements')
 const pagesBase = import.meta.env.BASE_URL
@@ -102,7 +103,7 @@ onBeforeUnmount(() => { if (pollTimer) window.clearInterval(pollTimer) })
 
 <template>
   <main class="flex min-h-dvh flex-col">
-    <header class="safe-top z-10 border-b border-border bg-background px-3 pb-3">
+    <header class="safe-top relative z-10 border-b border-border bg-background px-3 pb-3">
       <div class="mx-auto flex max-w-6xl items-center justify-between gap-3">
         <div class="flex items-center gap-2"><span class="grid size-10 place-items-center rounded-xl bg-primary text-white"><Map class="size-5" /></span><div><h1 class="font-bold">Observation Statistics</h1><p class="text-xs text-muted-foreground">{{ session?.kind === 'global' ? 'All permanent Events' : session?.kind === 'temporary' ? 'Temporary session' : session?.eventCode }}</p></div></div>
         <nav class="flex items-center gap-1">
@@ -111,28 +112,34 @@ onBeforeUnmount(() => { if (pollTimer) window.clearInterval(pollTimer) })
         </nav>
       </div>
 
-      <div class="mx-auto mt-3 grid max-w-6xl grid-cols-2 gap-2 md:grid-cols-4">
-        <Card class="p-3"><p class="text-xs text-muted-foreground">Observations</p><strong class="text-xl">{{ items.length }}</strong></Card>
-        <Card class="p-3"><p class="text-xs text-muted-foreground">Average reading</p><strong class="text-xl">{{ average === null ? '—' : average.toFixed(2) }}</strong></Card>
-        <Card class="p-3"><p class="text-xs text-muted-foreground">Photos</p><strong class="text-xl">{{ photoCount }}</strong></Card>
-        <Card class="p-3"><p class="text-xs text-muted-foreground">Voice Notes</p><strong class="text-xl">{{ audioCount }}</strong></Card>
-      </div>
-      <div class="mx-auto mt-2 flex max-w-6xl gap-1 overflow-x-auto pb-1" aria-label="Observer Feeling counts">
-        <span v-for="([name, face, label]) in feelings" :key="name" class="flex shrink-0 items-center gap-1 rounded-full border border-border bg-white px-2 py-1 text-sm" :title="label"><span aria-hidden="true">{{ face }}</span><span>{{ feelingCounts[name] }}</span><span class="sr-only">{{ label }}</span></span>
-      </div>
+      <div v-show="dashboardOpen" id="stats-dashboard">
+        <div class="mx-auto mt-3 grid max-w-6xl grid-cols-2 gap-2 md:grid-cols-4">
+          <Card class="p-3"><p class="text-xs text-muted-foreground">Observations</p><strong class="text-xl">{{ items.length }}</strong></Card>
+          <Card class="p-3"><p class="text-xs text-muted-foreground">Average reading</p><strong class="text-xl">{{ average === null ? '—' : average.toFixed(2) }}</strong></Card>
+          <Card class="p-3"><p class="text-xs text-muted-foreground">Photos</p><strong class="text-xl">{{ photoCount }}</strong></Card>
+          <Card class="p-3"><p class="text-xs text-muted-foreground">Voice Notes</p><strong class="text-xl">{{ audioCount }}</strong></Card>
+        </div>
+        <div class="mx-auto mt-2 flex max-w-6xl gap-1 overflow-x-auto pb-1" aria-label="Observer Feeling counts">
+          <span v-for="([name, face, label]) in feelings" :key="name" class="flex shrink-0 items-center gap-1 rounded-full border border-border bg-white px-2 py-1 text-sm" :title="label"><span aria-hidden="true">{{ face }}</span><span>{{ feelingCounts[name] }}</span><span class="sr-only">{{ label }}</span></span>
+        </div>
 
-      <div class="mx-auto mt-2 flex max-w-6xl flex-wrap items-center gap-2">
-        <div class="flex rounded-xl bg-muted p-1">
-          <button class="rounded-lg px-3 py-2 text-sm font-semibold" :class="mode === 'points' && 'bg-white shadow-sm'" @click="mode = 'points'">Points</button>
-          <button class="rounded-lg px-3 py-2 text-sm font-semibold" :class="mode === 'h3' && 'bg-white shadow-sm'" @click="mode = 'h3'">H3 density</button>
+        <div class="mx-auto mt-2 flex max-w-6xl flex-wrap items-center gap-2">
+          <div class="flex rounded-xl bg-muted p-1">
+            <button class="rounded-lg px-3 py-2 text-sm font-semibold" :class="mode === 'points' && 'bg-white shadow-sm'" @click="mode = 'points'">Points</button>
+            <button class="rounded-lg px-3 py-2 text-sm font-semibold" :class="mode === 'h3' && 'bg-white shadow-sm'" @click="mode = 'h3'">H3 density</button>
+          </div>
+          <div v-if="mode === 'points'" class="flex rounded-xl bg-muted p-1">
+            <button v-for="style in ['measurements', 'feelings', 'plants'] as const" :key="style" class="rounded-lg px-3 py-2 text-sm font-semibold capitalize" :class="pointStyle === style && 'bg-white shadow-sm'" @click="pointStyle = style">{{ style }}</button>
+          </div>
+          <label class="ml-auto flex min-h-10 items-center gap-2 text-sm"><input v-model="polling" type="checkbox" /> Poll every 30s</label>
+          <Button variant="outline" size="sm" :disabled="loading" @click="refresh"><RefreshCw class="size-4" :class="loading && 'animate-spin'" /> Refresh</Button>
+          <Button v-if="session?.kind === 'temporary'" variant="destructive" size="sm" @click="cleanTemporarySession"><Trash2 class="size-4" /> Delete session</Button>
         </div>
-        <div v-if="mode === 'points'" class="flex rounded-xl bg-muted p-1">
-          <button v-for="style in ['measurements', 'feelings', 'plants'] as const" :key="style" class="rounded-lg px-3 py-2 text-sm font-semibold capitalize" :class="pointStyle === style && 'bg-white shadow-sm'" @click="pointStyle = style">{{ style }}</button>
-        </div>
-        <label class="ml-auto flex min-h-10 items-center gap-2 text-sm"><input v-model="polling" type="checkbox" /> Poll every 30s</label>
-        <Button variant="outline" size="sm" :disabled="loading" @click="refresh"><RefreshCw class="size-4" :class="loading && 'animate-spin'" /> Refresh</Button>
-        <Button v-if="session?.kind === 'temporary'" variant="destructive" size="sm" @click="cleanTemporarySession"><Trash2 class="size-4" /> Delete session</Button>
       </div>
+      <button class="absolute bottom-0 left-1/2 grid size-8 -translate-x-1/2 translate-y-1/2 place-items-center rounded-full border border-border bg-background shadow-sm hover:bg-accent" :aria-expanded="dashboardOpen" aria-controls="stats-dashboard" :aria-label="dashboardOpen ? 'Collapse dashboard' : 'Expand dashboard'" @click="dashboardOpen = !dashboardOpen">
+        <ChevronUp v-if="dashboardOpen" class="size-4" />
+        <ChevronDown v-else class="size-4" />
+      </button>
     </header>
 
     <section class="relative min-h-[55dvh] flex-1">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { BarChart3, Leaf, LogOut, Plus, Trash2 } from 'lucide-vue-next'
+import { ArrowLeftRight, BarChart3, Leaf, LogOut, Plus, Trash2 } from 'lucide-vue-next'
 import {
   acknowledgePrivacy,
   clearSession,
@@ -181,6 +181,17 @@ async function cleanTemporarySession() {
   gate.value = true
 }
 
+function changeEvent() {
+  if (!window.confirm('Change Event? You will permanently lose the ability to edit this Event’s Observations from this browser.')) return
+  clearSession()
+  session.value = null
+  items.value = []
+  selected.value = null
+  formOpen.value = false
+  privacyGate.value = false
+  gate.value = true
+}
+
 function leave() {
   if (!window.confirm('Leave this Collection Session? You will permanently lose the ability to edit its Observations.')) return
   clearSession()
@@ -203,6 +214,7 @@ onMounted(restore)
       </div>
       <nav class="glass pointer-events-auto flex rounded-2xl border border-border p-1 shadow-sm" aria-label="Application">
         <a :href="`${pagesBase}stats/`" class="grid size-10 place-items-center rounded-xl hover:bg-accent" aria-label="Statistics"><BarChart3 class="size-5" /></a>
+        <button class="grid size-10 place-items-center rounded-xl hover:bg-accent" aria-label="Change Event" @click="changeEvent"><ArrowLeftRight class="size-5" /></button>
         <button class="grid size-10 place-items-center rounded-xl hover:bg-accent" aria-label="Leave session" @click="leave"><LogOut class="size-5" /></button>
       </nav>
     </header>

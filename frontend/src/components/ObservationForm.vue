@@ -57,7 +57,7 @@ const currentPhotoUrl = computed(() => {
   return photoPreview
 })
 const validColor = computed(() => SENSOR_COLOR_PATTERN.test(colorText.value))
-const valid = computed(() => props.location && validColor.value && reading.value !== '' && Number.isFinite(Number(reading.value)) && Number(reading.value) >= 0)
+const valid = computed(() => props.location && validColor.value && reading.value !== '' && Number.isFinite(Number(reading.value)) && Number(reading.value) >= 0 && Number(reading.value) <= 1)
 
 watch(() => props.observation, (observation) => {
   const nextColor = (observation?.sensorColor ?? WHITE).toUpperCase()
@@ -230,7 +230,7 @@ onBeforeUnmount(() => {
 
       <section class="grid gap-4">
         <h3 class="font-bold">2. Sensor measurements</h3>
-        <div class="field"><label for="reading">Plant Reading</label><input id="reading" v-model="reading" class="control" type="number" min="0" step="any" inputmode="decimal" required /></div>
+        <div class="field"><label for="reading">Plant Reading</label><input id="reading" v-model="reading" class="control" type="number" min="0" max="1" step="any" inputmode="decimal" placeholder="0–1, e.g. 0.65" required /></div>
         <div class="field">
           <span class="field-label">Sensor Color</span>
           <div class="grid grid-cols-[auto_1fr] gap-3">
@@ -238,7 +238,7 @@ onBeforeUnmount(() => {
               <span class="size-7 rounded-lg border border-border" :style="{ backgroundColor: color }" aria-hidden="true" /> Choose color
               <input class="sr-only" type="color" :value="pickerColor" @input="chooseColor" />
             </label>
-            <input id="sensor-color" v-model.trim="colorText" class="control uppercase" aria-label="Sensor Color hex code" :aria-describedby="validColor ? undefined : 'sensor-color-error'" :aria-invalid="!validColor" autocomplete="off" autocapitalize="characters" maxlength="7" spellcheck="false" />
+            <input id="sensor-color" v-model.trim="colorText" class="control uppercase" aria-label="Sensor Color hex code" :aria-describedby="validColor ? undefined : 'sensor-color-error'" :aria-invalid="!validColor" placeholder="#FFFFFF" autocomplete="off" autocapitalize="characters" maxlength="7" spellcheck="false" />
           </div>
           <p v-if="!validColor" id="sensor-color-error" class="text-sm font-medium text-destructive">Enter a six-digit hex color such as #FFFFFF.</p>
         </div>
@@ -249,7 +249,7 @@ onBeforeUnmount(() => {
         <div class="grid grid-cols-5 gap-2" role="group" aria-label="Observer Feeling">
           <button v-for="([name, face, label]) in feelings" :key="name" type="button" class="min-h-12 rounded-xl border text-2xl" :class="feeling === name ? 'border-primary bg-accent ring-2 ring-ring/30' : 'border-border bg-white'" :aria-label="label" :aria-pressed="feeling === name" @click="feeling = feeling === name ? null : name">{{ face }}</button>
         </div>
-        <div class="field"><label for="comment">Comment <span class="font-normal text-muted-foreground">({{ comment.length }}/500)</span></label><textarea id="comment" v-model="comment" class="control min-h-24 py-3" maxlength="500" /></div>
+        <div class="field"><label for="comment">Comment <span class="font-normal text-muted-foreground">({{ comment.length }}/500)</span></label><textarea id="comment" v-model="comment" class="control min-h-24 py-3" placeholder="Describe what you notice (optional)" maxlength="500" /></div>
       </section>
 
       <section class="grid gap-4">

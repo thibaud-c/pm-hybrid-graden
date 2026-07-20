@@ -7,7 +7,7 @@ const input = {
   latitude: 47.07,
   longitude: 15.44,
   accuracyM: 4,
-  plantReading: 1.25,
+  plantReading: 0.75,
   sensorColor: '#A0B1C2',
   feeling: 'curiosity',
   comment: null,
@@ -183,5 +183,6 @@ test('Global Stats never exposes writable Event Codes', async () => {
   })
   const result = await response.json() as { observations: Array<Record<string, unknown>> }
   expect(result.observations).toHaveLength(1)
+  expect(result.observations[0].plantReading).toBe(1)
   expect('eventCode' in result.observations[0]).toBe(false)
 })

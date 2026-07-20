@@ -97,12 +97,12 @@ const ensureWrite = async (session: Session) => {
   }
 }
 
-const publicObservation = (row: ObservationRow) => ({
+const publicObservation = (row: ObservationRow, clampPlantReading = false) => ({
   id: row.id,
   latitude: row.latitude,
   longitude: row.longitude,
   accuracyM: row.accuracy_m,
-  plantReading: row.plant_reading,
+  plantReading: clampPlantReading ? Math.min(row.plant_reading, 1) : row.plant_reading,
   sensorColor: row.sensor_color,
   feeling: row.feeling,
   comment: row.comment,
@@ -186,7 +186,7 @@ app.get('/observations', async (c) => {
   const session = c.get('session')
   if (view === 'collection' && session.kind === 'global') fail(403, 'This session is read-only')
   const observations = await db.listObservations(session, view)
-  return c.json({ observations: observations.map(publicObservation) })
+  return c.json({ observations: observations.map((row) => publicObservation(row, view === 'stats')) })
 })
 
 app.post('/observations/drafts', async (c) => {

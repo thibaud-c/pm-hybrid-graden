@@ -27,7 +27,7 @@ const submit = () => {
       <form class="mt-6 grid gap-4" @submit.prevent="submit">
         <div class="field">
           <label for="access-code">Access Code</label>
-          <input id="access-code" v-model="code" class="control uppercase" autocomplete="off" autocapitalize="characters" required />
+          <input id="access-code" v-model="code" class="control uppercase" placeholder="e.g. GARDEN-2026" autocomplete="off" autocapitalize="characters" required />
         </div>
         <label v-if="purpose === 'collect'" class="flex items-start gap-3 rounded-xl bg-muted p-3 text-sm leading-5">
           <input v-model="acknowledged" class="mt-1 size-4" type="checkbox" required />

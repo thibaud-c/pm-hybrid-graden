@@ -19,6 +19,7 @@ let map: maplibregl.Map | null = null
 let locationMarker: Marker | null = null
 let domMarkers: Marker[] = []
 let fitted = false
+let resizeObserver: ResizeObserver | null = null
 const values = computed(() => props.observations.map((item) => item.plantReading))
 const emoji = Object.fromEntries(feelings.map(([name, face]) => [name, face]))
 
@@ -148,12 +149,17 @@ onMounted(() => {
     },
   })
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
+  resizeObserver = new ResizeObserver(() => map?.resize())
+  resizeObserver.observe(container.value!)
   map.on('load', () => {
     map!.addSource('observations', { type: 'geojson', data: features() })
     map!.addLayer({
       id: 'observations-layer',
       type: 'circle',
       source: 'observations',
+      layout: {
+        visibility: props.mode === 'collection' || (props.mode === 'points' && props.pointStyle === 'measurements') ? 'visible' : 'none',
+      },
       paint: {
         'circle-radius': ['get', 'radius'],
         'circle-color': ['get', 'color'],
@@ -167,9 +173,10 @@ onMounted(() => {
       id: 'h3-layer',
       type: 'fill',
       source: 'h3',
+      layout: { visibility: props.mode === 'h3' ? 'visible' : 'none' },
       paint: {
-        'fill-color': ['interpolate', ['linear'], ['get', 'count'], 1, '#dff1dc', 5, '#6fae72', 15, '#185c39'],
-        'fill-opacity': 0.78,
+        'fill-color': ['interpolate', ['linear'], ['get', 'count'], 1, '#440154', 5, '#cc4778', 15, '#f89540'],
+        'fill-opacity': 0.84,
         'fill-outline-color': '#ffffff',
       },
     })
@@ -193,7 +200,7 @@ onMounted(() => {
 
 watch(() => [props.observations, props.mode, props.pointStyle], () => nextTick(render), { deep: true })
 watch(() => props.selectedLocation, updateLocation, { deep: true })
-onBeforeUnmount(() => { clearDomMarkers(); locationMarker?.remove(); map?.remove() })
+onBeforeUnmount(() => { resizeObserver?.disconnect(); clearDomMarkers(); locationMarker?.remove(); map?.remove() })
 </script>
 
 <template><div ref="container" class="map" aria-label="Observation map"></div></template>
