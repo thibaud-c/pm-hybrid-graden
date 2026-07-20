@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { ArrowLeftRight, BarChart3, Leaf, LogOut, Plus, Trash2 } from 'lucide-vue-next'
 import {
   acknowledgePrivacy,
@@ -34,6 +34,7 @@ const restoreError = ref('')
 const formOpen = ref(false)
 const selected = ref<Observation | null>(null)
 const location = ref<Location | null>(null)
+const placing = ref(false)
 const saving = ref(false)
 const formError = ref('')
 let draftId: string | null = null
@@ -95,16 +96,23 @@ async function enter(code: string, acknowledged: boolean) {
   }
 }
 
-function addObservation() {
+function addObservation(nextLocation: Location | null = null) {
   if (session.value?.eventStatus === 'closed') return
+  placing.value = false
   selected.value = null
-  location.value = null
+  location.value = nextLocation
   draftId = null
   formError.value = ''
   formOpen.value = true
 }
 
+function chooseMapLocation(nextLocation: Location) {
+  if (formOpen.value) location.value = nextLocation
+  else addObservation(nextLocation)
+}
+
 function editObservation(observation: Observation) {
+  placing.value = false
   selected.value = observation
   location.value = {
     latitude: observation.latitude,
@@ -201,11 +209,12 @@ function leave() {
 }
 
 onMounted(restore)
+watch(formOpen, (open) => { if (!open) placing.value = false })
 </script>
 
 <template>
   <main class="map-shell">
-    <MapView :observations="items" :selected-location="formOpen ? location : null" :placing="formOpen" mode="collection" @observation="editObservation" @location="location = $event" />
+    <MapView :observations="items" :selected-location="formOpen ? location : null" :placing="placing" :create-on-map-click="!!session && !formOpen && session.eventStatus !== 'closed'" mode="collection" @observation="editObservation" @location="chooseMapLocation" />
 
     <header class="safe-top pointer-events-none fixed inset-x-0 top-0 z-20 flex items-start justify-between gap-2 p-3">
       <div class="glass pointer-events-auto flex items-center gap-2 rounded-2xl border border-border px-3 py-2 shadow-sm">
@@ -222,10 +231,11 @@ onMounted(restore)
     <div v-if="session?.eventStatus === 'closed'" class="glass fixed left-1/2 top-24 z-20 -translate-x-1/2 rounded-xl border border-border px-4 py-2 text-sm font-semibold shadow">This Event is closed. Existing Observations are read-only.</div>
     <div v-if="!formOpen" class="safe-bottom fixed inset-x-0 bottom-0 z-20 flex flex-col items-center gap-2 p-4">
       <Button v-if="session?.kind === 'temporary'" variant="destructive" size="sm" @click="cleanTemporarySession"><Trash2 class="size-4" /> Delete temporary session</Button>
-      <Button class="min-w-48 rounded-full shadow-xl" :disabled="session?.eventStatus === 'closed'" @click="addObservation"><Plus /> Add Observation</Button>
+      <Button class="min-w-48 rounded-full shadow-xl" :disabled="session?.eventStatus === 'closed'" @click="addObservation()"><Plus /> Add Observation</Button>
+      <p v-if="session && session.eventStatus !== 'closed'" class="glass rounded-full px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">or tap the map to place it</p>
     </div>
 
-    <ObservationForm v-if="formOpen" :key="selected?.id ?? 'new'" :observation="selected" :location="location" :saving="saving" :error="formError" @close="formOpen = false" @locate="useLocation" @save="save" @delete="deleteSelected" />
+    <ObservationForm v-if="formOpen" :key="selected?.id ?? 'new'" :observation="selected" :location="location" :saving="saving" :error="formError" @close="formOpen = false" @locate="useLocation" @placing="placing = $event" @save="save" @delete="deleteSelected" />
     <AccessGate v-if="gate" purpose="collect" :loading="gateLoading" :error="gateError" @submit="enter" />
     <PrivacyGate v-if="privacyGate" :loading="gateLoading" :error="gateError" @submit="acceptPrivacy" />
     <ServiceRetry v-if="restoreError" :message="restoreError" @retry="restore" />

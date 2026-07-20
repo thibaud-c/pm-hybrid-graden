@@ -9,9 +9,10 @@ const props = withDefaults(defineProps<{
   observations: Observation[]
   selectedLocation?: Location | null
   placing?: boolean
+  createOnMapClick?: boolean
   mode?: 'collection' | 'points' | 'h3'
   pointStyle?: 'measurements' | 'feelings' | 'plants'
-}>(), { selectedLocation: null, placing: false, mode: 'collection', pointStyle: 'measurements' })
+}>(), { selectedLocation: null, placing: false, createOnMapClick: false, mode: 'collection', pointStyle: 'measurements' })
 const emit = defineEmits<{ observation: [observation: Observation]; location: [location: Location] }>()
 
 const container = ref<HTMLElement>()
@@ -117,7 +118,7 @@ function updateLocation() {
   const coordinates: [number, number] = [props.selectedLocation.longitude, props.selectedLocation.latitude]
   const focusLocation = !locationMarker || props.selectedLocation.accuracyM !== null
   if (!locationMarker) {
-    locationMarker = new maplibregl.Marker({ color: '#25633d', draggable: true })
+    locationMarker = new maplibregl.Marker({ color: '#25633d', draggable: props.placing })
       .setLngLat(coordinates)
       .addTo(map)
     locationMarker.on('dragend', () => {
@@ -190,7 +191,9 @@ onMounted(() => {
       if (count) new maplibregl.Popup().setLngLat(event.lngLat).setText(`${count} Observation${count === 1 ? '' : 's'}`).addTo(map!)
     })
     map!.on('click', (event) => {
-      if (props.placing) emit('location', { latitude: event.lngLat.lat, longitude: event.lngLat.lng, accuracyM: null })
+      if (!props.placing && !props.createOnMapClick) return
+      if (map!.queryRenderedFeatures(event.point, { layers: ['observations-layer'] }).length) return
+      emit('location', { latitude: event.lngLat.lat, longitude: event.lngLat.lng, accuracyM: null })
     })
     map!.on('zoomend', render)
     render()
@@ -200,6 +203,7 @@ onMounted(() => {
 
 watch(() => [props.observations, props.mode, props.pointStyle], () => nextTick(render), { deep: true })
 watch(() => props.selectedLocation, updateLocation, { deep: true })
+watch(() => props.placing, (placing) => locationMarker?.setDraggable(placing))
 onBeforeUnmount(() => { resizeObserver?.disconnect(); clearDomMarkers(); locationMarker?.remove(); map?.remove() })
 </script>
 

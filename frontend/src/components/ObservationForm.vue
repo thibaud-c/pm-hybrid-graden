@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import Coloris from '@melloware/coloris'
+import '@melloware/coloris/dist/coloris.css'
 import { Camera, LocateFixed, MapPin, Mic, Square, Trash2, X } from 'lucide-vue-next'
 import type { Location, Observation, ObservationSave } from '../types'
 import { feelings } from '../types'
@@ -15,20 +17,26 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   locate: []
+  placing: [value: boolean]
   save: [value: ObservationSave]
   delete: []
 }>()
 
 const WHITE = '#FFFFFF'
-const PICKER_SEED = '#00FF35'
 const SENSOR_COLOR_PATTERN = /^#[0-9A-F]{6}$/i
-const initialColor = (props.observation?.sensorColor ?? WHITE).toUpperCase()
-const reading = ref(props.observation?.plantReading.toString() ?? '')
-const color = ref(initialColor)
-const colorText = ref(initialColor)
-const pickerColor = ref(initialColor === WHITE ? PICKER_SEED : initialColor)
-const feeling = ref(props.observation?.feeling ?? null)
-const comment = ref(props.observation?.comment ?? '')
+const SENSOR_COLORS = [
+  ['#1ABC9C', 'Turquoise'], ['#16A085', 'Dark turquoise'], ['#2ECC71', 'Emerald'], ['#27AE60', 'Green'], ['#3498DB', 'Blue'],
+  ['#2980B9', 'Dark blue'], ['#9B59B6', 'Purple'], ['#8E44AD', 'Dark purple'], ['#34495E', 'Blue grey'], ['#000000', 'Black'],
+  ['#F1C40F', 'Yellow'], ['#F39C12', 'Orange'], ['#E67E22', 'Deep orange'], ['#D35400', 'Burnt orange'], ['#E74C3C', 'Red'],
+  ['#C0392B', 'Dark red'], ['#FFFFFF', 'White'], ['#ECF0F1', 'Light grey'], ['#BDC3C7', 'Grey'], ['#7F8C8D', 'Dark grey'],
+] as const
+const reading = ref('')
+const color = ref('')
+const customColor = ref(WHITE)
+const colorMenu = ref<HTMLDetailsElement>()
+const customColorInput = ref<HTMLInputElement>()
+const feeling = ref<Observation['feeling']>(null)
+const comment = ref('')
 const photo = ref<Blob | null>(null)
 const audio = ref<Blob | null>(null)
 const removePhoto = ref(false)
@@ -44,7 +52,6 @@ let hardStopTimer: number | null = null
 let recordingStartedAt = 0
 let audioPreview = ''
 let photoPreview = ''
-let awaitingLocation = false
 
 const currentAudioUrl = computed(() => {
   if (audioPreview) URL.revokeObjectURL(audioPreview)
@@ -56,42 +63,53 @@ const currentPhotoUrl = computed(() => {
   photoPreview = photo.value ? URL.createObjectURL(photo.value) : ''
   return photoPreview
 })
-const validColor = computed(() => SENSOR_COLOR_PATTERN.test(colorText.value))
+const validColor = computed(() => SENSOR_COLOR_PATTERN.test(color.value))
 const valid = computed(() => props.location && validColor.value && reading.value !== '' && Number.isFinite(Number(reading.value)) && Number(reading.value) >= 0 && Number(reading.value) <= 1)
 
 watch(() => props.observation, (observation) => {
-  const nextColor = (observation?.sensorColor ?? WHITE).toUpperCase()
+  const nextColor = observation?.sensorColor.toUpperCase() ?? ''
   reading.value = observation?.plantReading.toString() ?? ''
   color.value = nextColor
-  colorText.value = nextColor
-  pickerColor.value = nextColor === WHITE ? PICKER_SEED : nextColor
+  customColor.value = nextColor || WHITE
   feeling.value = observation?.feeling ?? null
   comment.value = observation?.comment ?? ''
 }, { immediate: true })
 
-watch(colorText, (value) => {
-  if (!SENSOR_COLOR_PATTERN.test(value)) return
-  color.value = value.toUpperCase()
-  pickerColor.value = color.value === WHITE ? PICKER_SEED : color.value
-})
-
-watch(() => props.location, (location) => {
-  if (!awaitingLocation || !location) return
-  awaitingLocation = false
-  collapsed.value = true
-}, { deep: true })
-
-function chooseColor(event: Event) {
-  const value = (event.target as HTMLInputElement).value.toUpperCase()
+function choosePaletteColor(value: string) {
   color.value = value
-  colorText.value = value
-  pickerColor.value = value
+  customColor.value = value
+  colorMenu.value?.removeAttribute('open')
 }
 
-function requestLocation() {
-  awaitingLocation = true
-  emit('locate')
+function previewCustomColor(event: Event) {
+  customColor.value = (event.target as HTMLInputElement).value.toUpperCase()
 }
+
+function chooseCustomColor() {
+  if (!SENSOR_COLOR_PATTERN.test(customColor.value)) return
+  color.value = customColor.value.toUpperCase()
+  colorMenu.value?.removeAttribute('open')
+}
+
+function setPlacing(value: boolean) {
+  collapsed.value = value
+  emit('placing', value)
+}
+
+onMounted(() => {
+  Coloris.init()
+  Coloris({
+    el: customColorInput.value!,
+    wrap: false,
+    theme: 'large',
+    themeMode: 'light',
+    format: 'hex',
+    formatToggle: false,
+    alpha: false,
+    closeButton: true,
+    closeLabel: 'Done',
+  })
+})
 
 async function resizePhoto(file: File) {
   const bitmap = await createImageBitmap(file)
@@ -191,6 +209,7 @@ function confirmDelete() {
 }
 
 onBeforeUnmount(() => {
+  Coloris.close(true)
   stopRecording()
   stream?.getTracks().forEach((track) => track.stop())
   if (audioPreview) URL.revokeObjectURL(audioPreview)
@@ -205,7 +224,7 @@ onBeforeUnmount(() => {
         <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-white"><MapPin class="size-5" /></span>
         <div><p class="font-semibold">{{ location ? (location.accuracyM === null ? 'Location selected' : 'Location found') : 'Choose a location' }}</p><p class="text-sm text-muted-foreground">{{ location ? (location.accuracyM === null ? 'Drag the pin to adjust it.' : `Accurate to about ±${Math.round(location.accuracyM)} m`) : 'Tap the map to place the pin.' }}</p></div>
       </div>
-      <Button @click="collapsed = false">{{ location ? 'Continue observation' : 'Return to observation' }}</Button>
+      <Button @click="setPlacing(false)">{{ location ? 'Continue observation' : 'Return to observation' }}</Button>
     </div>
     <template v-else>
     <div class="sheet-handle shrink-0" />
@@ -218,8 +237,8 @@ onBeforeUnmount(() => {
       <div class="grid min-h-0 flex-1 gap-6 overflow-y-auto p-4">
       <section class="grid gap-3">
         <div><h3 class="font-bold">1. Location</h3><p class="text-sm text-muted-foreground">Your exact location anchors this Observation. We ask only when you tap the button; you can also tap or drag the marker on the map.</p></div>
-        <Button variant="outline" @click="requestLocation"><LocateFixed /> Use my location</Button>
-        <Button variant="outline" @click="collapsed = true"><MapPin /> Place on map</Button>
+        <Button variant="outline" @click="emit('locate')"><LocateFixed /> Use my location</Button>
+        <Button variant="outline" @click="setPlacing(true)"><MapPin /> Place on map</Button>
         <p v-if="location" class="rounded-xl bg-muted p-3 text-sm">
           <strong>Location selected</strong>
           <span v-if="location.accuracyM !== null" class="block text-muted-foreground">Accurate to about ±{{ Math.round(location.accuracyM) }} m</span>
@@ -233,14 +252,51 @@ onBeforeUnmount(() => {
         <div class="field"><label for="reading">Plant Reading</label><input id="reading" v-model="reading" class="control" type="number" min="0" max="1" step="any" inputmode="decimal" placeholder="0–1, e.g. 0.65" required /></div>
         <div class="field">
           <span class="field-label">Sensor Color</span>
-          <div class="grid grid-cols-[auto_1fr] gap-3">
-            <label class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-border bg-white px-3 text-sm font-semibold">
-              <span class="size-7 rounded-lg border border-border" :style="{ backgroundColor: color }" aria-hidden="true" /> Choose color
-              <input class="sr-only" type="color" :value="pickerColor" @input="chooseColor" />
-            </label>
-            <input id="sensor-color" v-model.trim="colorText" class="control uppercase" aria-label="Sensor Color hex code" :aria-describedby="validColor ? undefined : 'sensor-color-error'" :aria-invalid="!validColor" placeholder="#FFFFFF" autocomplete="off" autocapitalize="characters" maxlength="7" spellcheck="false" />
-          </div>
-          <p v-if="!validColor" id="sensor-color-error" class="text-sm font-medium text-destructive">Enter a six-digit hex color such as #FFFFFF.</p>
+          <details ref="colorMenu" class="rounded-xl border border-border bg-white">
+            <summary class="flex min-h-11 cursor-pointer list-none items-center gap-3 px-3 py-2 font-semibold">
+              <span class="size-7 rounded-lg border border-border" :class="color ? '' : 'border-dashed'" :style="{ backgroundColor: color || WHITE }" aria-hidden="true" />
+              <span class="flex-1">{{ color ? color : 'Select color' }}</span>
+            </summary>
+            <div class="grid gap-4 border-t border-border p-3">
+              <div>
+                <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Default palette</p>
+                <div class="grid grid-cols-5 gap-3" role="group" aria-label="Sensor Color palette">
+                  <button
+                    v-for="([value, label]) in SENSOR_COLORS"
+                    :key="value"
+                    type="button"
+                    class="aspect-square min-h-10 rounded-xl border border-border shadow-sm"
+                    :class="color === value ? 'ring-2 ring-primary ring-offset-2' : ''"
+                    :style="{ backgroundColor: value }"
+                    :aria-label="`Select ${label} (${value})`"
+                    :aria-pressed="color === value"
+                    @click="choosePaletteColor(value)"
+                  />
+                </div>
+              </div>
+              <div class="grid gap-2 border-t border-border pt-3">
+                <label for="sensor-color-custom" class="text-sm font-semibold">Custom color…</label>
+                <input
+                  id="sensor-color-custom"
+                  ref="customColorInput"
+                  :value="customColor"
+                  class="control cursor-pointer uppercase"
+                  type="text"
+                  aria-label="Custom Sensor Color hex code"
+                  placeholder="#FFFFFF"
+                  autocomplete="off"
+                  autocapitalize="characters"
+                  maxlength="7"
+                  pattern="#[0-9A-Fa-f]{6}"
+                  spellcheck="false"
+                  @input="previewCustomColor"
+                  @change="chooseCustomColor"
+                />
+                <p class="text-xs text-muted-foreground">Fine-tune visually or enter a six-digit hex value.</p>
+              </div>
+            </div>
+          </details>
+          <p v-if="!validColor" class="text-sm text-muted-foreground">Choose a Sensor Color to continue.</p>
         </div>
       </section>
 
