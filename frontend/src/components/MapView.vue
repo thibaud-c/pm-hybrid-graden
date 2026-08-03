@@ -134,7 +134,7 @@ function updateLocation() {
 onMounted(() => {
   map = new maplibregl.Map({
     container: container.value!,
-    center: [16.3738, 48.2082],
+    center: [-43.5056, -20.3911],
     zoom: 12,
     style: {
       version: 8,

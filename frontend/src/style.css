@@ -52,7 +52,6 @@ button, input, textarea { font: inherit; }
 }
 .sheet {
   @apply fixed inset-0 z-30 mx-auto flex max-w-2xl flex-col overflow-hidden border border-border bg-background shadow-2xl;
-  padding-bottom: env(safe-area-inset-bottom);
 }
 .sheet-collapsed {
   @apply inset-x-0 bottom-0 top-auto h-auto max-h-none w-fit overflow-visible rounded-2xl border-0 bg-transparent;
