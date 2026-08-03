@@ -1,6 +1,6 @@
 import { getHexagonEdgeLengthAvg } from 'h3-js'
 
-export const H3_TARGET_EDGE_PX = 50
+export const H3_TARGET_EDGE_PX = 25
 export const POINT_RADIUS_MIN = 6
 export const POINT_RADIUS_MAX = 24
 export const POINT_RADIUS_EQUAL = 12

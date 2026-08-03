@@ -51,7 +51,7 @@ button, input, textarea { font: inherit; }
   @apply min-h-11 w-full rounded-xl border border-border bg-white px-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-ring/25;
 }
 .sheet {
-  @apply fixed inset-0 z-30 mx-auto flex h-dvh max-h-dvh max-w-2xl flex-col overflow-hidden border border-border bg-background shadow-2xl;
+  @apply fixed inset-0 z-30 mx-auto flex max-w-2xl flex-col overflow-hidden border border-border bg-background shadow-2xl;
   padding-bottom: env(safe-area-inset-bottom);
 }
 .sheet-collapsed {

@@ -126,7 +126,7 @@ onBeforeUnmount(() => { if (pollTimer) window.clearInterval(pollTimer) })
         <div class="mx-auto mt-2 flex max-w-6xl flex-wrap items-center gap-2">
           <div class="flex rounded-xl bg-muted p-1">
             <button class="rounded-lg px-3 py-2 text-sm font-semibold" :class="mode === 'points' && 'bg-white shadow-sm'" @click="mode = 'points'">Points</button>
-            <button class="rounded-lg px-3 py-2 text-sm font-semibold" :class="mode === 'h3' && 'bg-white shadow-sm'" @click="mode = 'h3'">H3 density</button>
+            <button class="rounded-lg px-3 py-2 text-sm font-semibold" :class="mode === 'h3' && 'bg-white shadow-sm'" @click="mode = 'h3'">Observation density</button>
           </div>
           <div v-if="mode === 'points'" class="flex rounded-xl bg-muted p-1">
             <button v-for="style in ['measurements', 'feelings', 'plants'] as const" :key="style" class="rounded-lg px-3 py-2 text-sm font-semibold capitalize" :class="pointStyle === style && 'bg-white shadow-sm'" @click="pointStyle = style">{{ style }}</button>

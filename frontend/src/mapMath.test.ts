@@ -13,3 +13,7 @@ test('clamps extreme readings at the 95th percentile radius', () => {
 test('uses finer H3 cells when zooming in', () => {
   expect(h3Resolution(16, 47)).toBeGreaterThan(h3Resolution(8, 47))
 })
+
+test('uses fine Observation Density cells at city scale', () => {
+  expect(h3Resolution(12, 47)).toBe(8)
+})

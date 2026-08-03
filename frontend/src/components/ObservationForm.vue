@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import Coloris from '@melloware/coloris'
-import '@melloware/coloris/dist/coloris.css'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { Camera, LocateFixed, MapPin, Mic, Square, Trash2, X } from 'lucide-vue-next'
 import type { Location, Observation, ObservationSave } from '../types'
 import { feelings } from '../types'
@@ -34,7 +32,6 @@ const reading = ref('')
 const color = ref('')
 const customColor = ref(WHITE)
 const colorMenu = ref<HTMLDetailsElement>()
-const customColorInput = ref<HTMLInputElement>()
 const feeling = ref<Observation['feeling']>(null)
 const comment = ref('')
 const photo = ref<Blob | null>(null)
@@ -81,35 +78,16 @@ function choosePaletteColor(value: string) {
   colorMenu.value?.removeAttribute('open')
 }
 
-function previewCustomColor(event: Event) {
-  customColor.value = (event.target as HTMLInputElement).value.toUpperCase()
-}
-
 function chooseCustomColor() {
   if (!SENSOR_COLOR_PATTERN.test(customColor.value)) return
-  color.value = customColor.value.toUpperCase()
-  colorMenu.value?.removeAttribute('open')
+  customColor.value = customColor.value.toUpperCase()
+  color.value = customColor.value
 }
 
 function setPlacing(value: boolean) {
   collapsed.value = value
   emit('placing', value)
 }
-
-onMounted(() => {
-  Coloris.init()
-  Coloris({
-    el: customColorInput.value!,
-    wrap: false,
-    theme: 'large',
-    themeMode: 'light',
-    format: 'hex',
-    formatToggle: false,
-    alpha: false,
-    closeButton: true,
-    closeLabel: 'Done',
-  })
-})
 
 async function resizePhoto(file: File) {
   const bitmap = await createImageBitmap(file)
@@ -209,7 +187,6 @@ function confirmDelete() {
 }
 
 onBeforeUnmount(() => {
-  Coloris.close(true)
   stopRecording()
   stream?.getTracks().forEach((track) => track.stop())
   if (audioPreview) URL.revokeObjectURL(audioPreview)
@@ -275,23 +252,24 @@ onBeforeUnmount(() => {
                 </div>
               </div>
               <div class="grid gap-2 border-t border-border pt-3">
-                <label for="sensor-color-custom" class="text-sm font-semibold">Custom color…</label>
-                <input
-                  id="sensor-color-custom"
-                  ref="customColorInput"
-                  :value="customColor"
-                  class="control cursor-pointer uppercase"
-                  type="text"
-                  aria-label="Custom Sensor Color hex code"
-                  placeholder="#FFFFFF"
-                  autocomplete="off"
-                  autocapitalize="characters"
-                  maxlength="7"
-                  pattern="#[0-9A-Fa-f]{6}"
-                  spellcheck="false"
-                  @input="previewCustomColor"
-                  @change="chooseCustomColor"
-                />
+                <span class="text-sm font-semibold">Custom color…</span>
+                <div class="grid grid-cols-[4rem_1fr] gap-2">
+                  <input v-model="customColor" class="control cursor-pointer p-1" type="color" aria-label="Choose custom Sensor Color" @input="chooseCustomColor" />
+                  <input
+                    id="sensor-color-custom"
+                    v-model="customColor"
+                    class="control uppercase"
+                    type="text"
+                    aria-label="Custom Sensor Color hex code"
+                    placeholder="#FFFFFF"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    maxlength="7"
+                    pattern="#[0-9A-Fa-f]{6}"
+                    spellcheck="false"
+                    @change="chooseCustomColor"
+                  />
+                </div>
                 <p class="text-xs text-muted-foreground">Fine-tune visually or enter a six-digit hex value.</p>
               </div>
             </div>
