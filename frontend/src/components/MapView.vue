@@ -136,18 +136,7 @@ onMounted(() => {
     container: container.value!,
     center: [-43.5056, -20.3911],
     zoom: 12,
-    style: {
-      version: 8,
-      sources: {
-        carto: {
-          type: 'raster',
-          tiles: ['https://basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png'],
-          tileSize: 256,
-          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        },
-      },
-      layers: [{ id: 'carto', type: 'raster', source: 'carto' }],
-    },
+    style: 'https://tiles.openfreemap.org/styles/positron',
   })
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
   resizeObserver = new ResizeObserver(() => map?.resize())
